@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from PIL import Image
+from transformers import pipeline
 
 # Seiten-Konfiguration
 st.set_page_config(
@@ -32,24 +33,37 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# KI-MODELL LADE-FUNKTION (PLAZHALTER)
+# KI-MODELL (AUTOMATISCHER DOWNLOAD DES GOOGLE-MODELLS)
 # ---------------------------------------------------------
 @st.cache_resource
-def load_ml_model():
-    # Hier kannst du später dein Modell laden (z.B. TensorFlow, PyTorch oder Joblib)
-    # import joblib
-    # model = joblib.load('dein_modell.pkl')
-    return None
+def load_hf_model():
+    # Lädt das Google Vision Transformer Modell direkt von Hugging Face
+    return pipeline("image-classification", model="google/vit-base-patch16-224")
+
+try:
+    classifier = load_hf_model()
+except Exception as e:
+    classifier = None
 
 def automatische_kategorie_erkennung(image):
-    # Hier kommt später deine Bildklassifizierung rein
-    # Beispielslogik für den Platzhalter:
-    if image is not None:
-        # Beispiel: prediction = model.predict(image)
-        return "Sonstiges"  # Standard-Rückgabe, bis das Modell eingebunden ist
+    if image is not None and classifier is not None:
+        # KI-Vorhersage für das hochgeladene Bild
+        results = classifier(image)
+        top_label = results[0]['label'].lower()
+        
+        # Übersetzung/Zuordnung der ImageNet-Klassen zu deinen Kategorien
+        if any(word in top_label for word in ['shoe', 'jacket', 'shirt', 'hat', 'glove', 'jersey', 'sock', 'coat', 'muffler', 'cardigan', 'cap', 'boot']):
+            return "Kleidung"
+        elif any(word in top_label for word in ['key', 'padlock']):
+            return "Schlüssel"
+        elif any(word in top_label for word in ['cellular', 'phone', 'laptop', 'ipod', 'mouse', 'keyboard', 'headphone', 'camera', 'screen', 'computer']):
+            return "Elektronik"
+        elif any(word in top_label for word in ['backpack', 'bag', 'purse', 'wallet', 'suitcase', 'pouch']):
+            return "Taschen/Rucksäcke"
+        elif any(word in top_label for word in ['book', 'envelope', 'passport', 'notebook', 'binder', 'paper']):
+            return "Dokumente"
+            
     return "Sonstiges"
-
-model = load_ml_model()
 
 # ---------------------------------------------------------
 # DATENBANK INITIALISIERUNG
@@ -95,7 +109,6 @@ def status_aendern(item_id, neuer_status):
 
 def item_karte_anzeigen(item):
     st.markdown(f"### {item['titel']}")
-    
     col_img, col1, col2 = st.columns([1, 2, 2])
     
     with col_img:
@@ -128,7 +141,7 @@ def item_karte_anzeigen(item):
     st.divider()
 
 # ---------------------------------------------------------
-# HAUPTSEITE
+# HAUPTSEITE & NAVIGATION
 # ---------------------------------------------------------
 st.markdown("<div class='main-header'>Digitales Fundbüro</div>", unsafe_allow_html=True)
 
@@ -201,7 +214,7 @@ elif st.session_state.ansicht == "diese_woche":
         for item in wochen_items:
             item_karte_anzeigen(item)
 
-# 4. ANSICHT: ALLE STÜCKE (inklusive Kategorie-Filter)
+# 4. ANSICHT: ALLE STÜCKE
 elif st.session_state.ansicht == "alle_stuecke":
     st.subheader("📦 Alle Stücke")
     
@@ -213,11 +226,9 @@ elif st.session_state.ansicht == "alle_stuecke":
     
     items = st.session_state.fundstuecke.copy()
     
-    # Filtern nach Kategorie
     if ausgewaehlte_kategorie != "Alle Kategorien":
         items = [item for item in items if item["kategorie"] == ausgewaehlte_kategorie]
         
-    # Sortierung
     if sortierung == "Chronologisch (Neueste zuerst)":
         items.sort(key=lambda x: x["datum"], reverse=True)
     else:
@@ -229,29 +240,29 @@ elif st.session_state.ansicht == "alle_stuecke":
         for item in items:
             item_karte_anzeigen(item)
 
-# 5. ANSICHT: NEUEN GEGENSTAND MELDEN (inkl. Foto-Upload & KI-Vorbereitung)
+# 5. ANSICHT: NEUEN GEGENSTAND MELDEN (mit Bild-Upload & Google KI-Erkennung)
 elif st.session_state.ansicht == "neu_melden":
     st.subheader("➕ Neuen Fund melden")
     
     uploaded_file = st.file_uploader("Foto des Gegenstands hochladen", type=["png", "jpg", "jpeg"])
     
     vorausgewaehlte_kategorie = "Sonstiges"
-     geladenes_bild = None
+    geladenes_bild = None
     
     if uploaded_file is not None:
         geladenes_bild = Image.open(uploaded_file)
         st.image(geladenes_bild, caption="Hochgeladenes Foto", width=200)
         
-        # Automatische Erkennung ausführen
-        erfaste_kategorie = automatische_kategorie_erkennung(geladenes_bild)
-        if erfaste_kategorie in KATEGORIEN_LISTE:
-            vorausgewaehlte_kategorie = erfaste_kategorie
+        # Automatische KI-Erkennung ausführen
+        erfasste_kategorie = automatische_kategorie_erkennung(geladenes_bild)
+        if erfasste_kategorie in KATEGORIEN_LISTE:
+            vorausgewaehlte_kategorie = erfasste_kategorie
             st.success(f"🤖 KI-Vorschlag für Kategorie: **{vorausgewaehlte_kategorie}**")
 
     with st.form("neuer_fund_form"):
         titel = st.text_input("Was wurde gefunden?")
         
-        # Vorauswahl durch KI setzen
+        # KI-Ergebnis im Dropdown vorauswählen
         kat_index = KATEGORIEN_LISTE[1:].index(vorausgewaehlte_kategorie) if vorausgewaehlte_kategorie in KATEGORIEN_LISTE[1:] else 0
         kategorie = st.selectbox("Kategorie", KATEGORIEN_LISTE[1:], index=kat_index)
         
