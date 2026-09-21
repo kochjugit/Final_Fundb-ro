@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+from PIL import Image
 
 # Seiten-Konfiguration
 st.set_page_config(
@@ -9,7 +10,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Custom CSS für Layout-Anpassung und vergrößerte Buttons/Container
+# Custom CSS für Layout-Anpassung
 st.markdown("""
     <style>
     .main-header {
@@ -27,18 +28,31 @@ st.markdown("""
         border-radius: 12px !important;
         margin-bottom: 1rem;
     }
-    .card {
-        padding: 1.5rem;
-        border-radius: 10px;
-        background-color: #F8F9FA;
-        border: 1px solid #E9ECEF;
-        margin-bottom: 1rem;
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# DATENBANK INITIALISIERUNG (Session State)
+# KI-MODELL LADE-FUNKTION (PLAZHALTER)
+# ---------------------------------------------------------
+@st.cache_resource
+def load_ml_model():
+    # Hier kannst du später dein Modell laden (z.B. TensorFlow, PyTorch oder Joblib)
+    # import joblib
+    # model = joblib.load('dein_modell.pkl')
+    return None
+
+def automatische_kategorie_erkennung(image):
+    # Hier kommt später deine Bildklassifizierung rein
+    # Beispielslogik für den Platzhalter:
+    if image is not None:
+        # Beispiel: prediction = model.predict(image)
+        return "Sonstiges"  # Standard-Rückgabe, bis das Modell eingebunden ist
+    return "Sonstiges"
+
+model = load_ml_model()
+
+# ---------------------------------------------------------
+# DATENBANK INITIALISIERUNG
 # ---------------------------------------------------------
 if "fundstuecke" not in st.session_state:
     st.session_state.fundstuecke = [
@@ -50,7 +64,8 @@ if "fundstuecke" not in st.session_state:
             "datum": datetime.now().date() - timedelta(days=2),
             "beschreibung": "Gestrickte Mütze mit Bommel",
             "kontakt": "mensa@fundbuero.de",
-            "status": "Aktiv"
+            "status": "Aktiv",
+            "bild": None
         },
         {
             "id": 2,
@@ -60,22 +75,15 @@ if "fundstuecke" not in st.session_state:
             "datum": datetime.now().date() - timedelta(days=10),
             "beschreibung": "3 Schlüssel mit blauem Anhänger",
             "kontakt": "bib@fundbuero.de",
-            "status": "Aktiv"
-        },
-        {
-            "id": 3,
-            "titel": "Kopfhörer (Wireless)",
-            "kategorie": "Elektronik",
-            "ort": "Hörsaal 1",
-            "datum": datetime.now().date() - timedelta(days=1),
-            "beschreibung": "Schwarzes Ladeetui",
-            "kontakt": "ha1@fundbuero.de",
-            "status": "Abgeholt"
+            "status": "Aktiv",
+            "bild": None
         }
     ]
 
 if "ansicht" not in st.session_state:
     st.session_state.ansicht = "home"
+
+KATEGORIEN_LISTE = ["Alle Kategorien", "Kleidung", "Schlüssel", "Elektronik", "Dokumente", "Taschen/Rucksäcke", "Sonstiges"]
 
 # ---------------------------------------------------------
 # HILFSFUNKTIONEN
@@ -87,16 +95,24 @@ def status_aendern(item_id, neuer_status):
 
 def item_karte_anzeigen(item):
     st.markdown(f"### {item['titel']}")
-    col1, col2 = st.columns(2)
+    
+    col_img, col1, col2 = st.columns([1, 2, 2])
+    
+    with col_img:
+        if item.get("bild") is not None:
+            st.image(item["bild"], use_container_width=True)
+        else:
+            st.info("Kein Bild vorhanden")
+            
     with col1:
-        st.write(f"**Ort:** {item['ort']}")
         st.write(f"**Kategorie:** {item['kategorie']}")
+        st.write(f"**Ort:** {item['ort']}")
         st.write(f"**Datum:** {item['datum'].strftime('%d.%m.%Y')}")
+        
     with col2:
         st.write(f"**Beschreibung:** {item['beschreibung']}")
         st.write(f"**Kontakt:** {item['kontakt']}")
         
-        # Status-Anzeige und Kennzeichnung
         if item["status"] == "Aktiv":
             st.warning("Status: Noch nicht abgeholt")
             if st.button("✅ Als abgeholt kennzeichnen", key=f"btn_abgeholt_{item['id']}"):
@@ -112,20 +128,18 @@ def item_karte_anzeigen(item):
     st.divider()
 
 # ---------------------------------------------------------
-# HAUPTSEITE / TABS (Analog zum Entwurf)
+# HAUPTSEITE
 # ---------------------------------------------------------
 st.markdown("<div class='main-header'>Digitales Fundbüro</div>", unsafe_allow_html=True)
 
-# Navigation zur Startseite oben anzeigen, falls man tief in einer Ansicht ist
 if st.session_state.ansicht != "home":
     if st.button("⬅️ Zurück zur Hauptübersicht", key="back_btn"):
         st.session_state.ansicht = "home"
         st.rerun()
 
-# 1. HAUPTÜBERSICHT (Große Buttons gemäß Zeichnung)
+# 1. HAUPTÜBERSICHT
 if st.session_state.ansicht == "home":
     st.write("---")
-    
     col_a, col_b = st.columns([3, 1])
     with col_a:
         if st.button("🔍  Schnellsuche"):
@@ -150,7 +164,6 @@ if st.session_state.ansicht == "home":
 elif st.session_state.ansicht == "schnellsuche":
     st.subheader("🔍 Schnellsuche")
     suchbegriff = st.text_input("Mütze, Schlüssel, Ort...", placeholder="Suchbegriff eingeben...")
-    
     filter_status = st.radio("Status-Filter:", ["Nur Aktive", "Nur Abgeholte", "Alle"], horizontal=True)
     
     gefundene = []
@@ -188,28 +201,60 @@ elif st.session_state.ansicht == "diese_woche":
         for item in wochen_items:
             item_karte_anzeigen(item)
 
-# 4. ANSICHT: ALLE STÜCKE
+# 4. ANSICHT: ALLE STÜCKE (inklusive Kategorie-Filter)
 elif st.session_state.ansicht == "alle_stuecke":
     st.subheader("📦 Alle Stücke")
     
-    sortierung = st.radio("Sortierung:", ["Chronologisch (Neueste zuerst)", "Alphabetisch (A-Z)"], horizontal=True)
+    col_kat, col_sort = st.columns(2)
+    with col_kat:
+        ausgewaehlte_kategorie = st.selectbox("Kategorie filtern:", KATEGORIEN_LISTE)
+    with col_sort:
+        sortierung = st.radio("Sortierung:", ["Chronologisch (Neueste zuerst)", "Alphabetisch (A-Z)"], horizontal=True)
     
     items = st.session_state.fundstuecke.copy()
+    
+    # Filtern nach Kategorie
+    if ausgewaehlte_kategorie != "Alle Kategorien":
+        items = [item for item in items if item["kategorie"] == ausgewaehlte_kategorie]
+        
+    # Sortierung
     if sortierung == "Chronologisch (Neueste zuerst)":
         items.sort(key=lambda x: x["datum"], reverse=True)
     else:
         items.sort(key=lambda x: x["titel"].lower())
         
-    for item in items:
-        item_karte_anzeigen(item)
+    if not items:
+        st.info("Keine Gegenstände in dieser Kategorie gefunden.")
+    else:
+        for item in items:
+            item_karte_anzeigen(item)
 
-# 5. ANSICHT: NEUEN GEGENSTAND MELDEN
+# 5. ANSICHT: NEUEN GEGENSTAND MELDEN (inkl. Foto-Upload & KI-Vorbereitung)
 elif st.session_state.ansicht == "neu_melden":
     st.subheader("➕ Neuen Fund melden")
     
+    uploaded_file = st.file_uploader("Foto des Gegenstands hochladen", type=["png", "jpg", "jpeg"])
+    
+    vorausgewaehlte_kategorie = "Sonstiges"
+     geladenes_bild = None
+    
+    if uploaded_file is not None:
+        geladenes_bild = Image.open(uploaded_file)
+        st.image(geladenes_bild, caption="Hochgeladenes Foto", width=200)
+        
+        # Automatische Erkennung ausführen
+        erfaste_kategorie = automatische_kategorie_erkennung(geladenes_bild)
+        if erfaste_kategorie in KATEGORIEN_LISTE:
+            vorausgewaehlte_kategorie = erfaste_kategorie
+            st.success(f"🤖 KI-Vorschlag für Kategorie: **{vorausgewaehlte_kategorie}**")
+
     with st.form("neuer_fund_form"):
         titel = st.text_input("Was wurde gefunden?")
-        kategorie = st.selectbox("Kategorie", ["Kleidung", "Schlüssel", "Elektronik", "Dokumente", "Sonstiges"])
+        
+        # Vorauswahl durch KI setzen
+        kat_index = KATEGORIEN_LISTE[1:].index(vorausgewaehlte_kategorie) if vorausgewaehlte_kategorie in KATEGORIEN_LISTE[1:] else 0
+        kategorie = st.selectbox("Kategorie", KATEGORIEN_LISTE[1:], index=kat_index)
+        
         ort = st.text_input("Fundort")
         datum = st.date_input("Funddatum", datetime.now().date())
         beschreibung = st.text_area("Beschreibung")
@@ -226,7 +271,8 @@ elif st.session_state.ansicht == "neu_melden":
                 "datum": datum,
                 "beschreibung": beschreibung,
                 "kontakt": kontakt,
-                "status": "Aktiv"
+                "status": "Aktiv",
+                "bild": geladenes_bild
             })
             st.success("Gegenstand erfolgreich gespeichert!")
             st.session_state.ansicht = "alle_stuecke"
