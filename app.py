@@ -50,7 +50,8 @@ def automatische_kategorie_erkennung(image):
         results = classifier(image)
         top_label = results[0]['label'].lower()
         
-        elif any(word in top_label for word in ['backpack', 'bag', 'purse', 'wallet', 'suitcase', 'pencil', 'pouch', 'case', 'box', 'binder']):
+        # 1. Taschen, Rucksäcke & Federtaschen
+        if any(word in top_label for word in ['backpack', 'bag', 'purse', 'wallet', 'suitcase', 'pencil', 'pouch', 'case', 'box', 'binder']):
             return "Taschen/Rucksäcke"
             
         # 2. Kleidung
@@ -65,8 +66,8 @@ def automatische_kategorie_erkennung(image):
         elif any(word in top_label for word in ['cellular', 'phone', 'laptop', 'ipod', 'mouse', 'keyboard', 'headphone', 'camera', 'screen', 'computer']):
             return "Elektronik"
             
-        # 5. Dokumente & Schreibwaren
-        elif any(word in top_label for word in ['book', 'envelope', 'passport', 'notebook', 'binder', 'paper', 'ruler']):
+        # 5. Dokumente
+        elif any(word in top_label for word in ['book', 'envelope', 'passport', 'notebook', 'paper', 'ruler']):
             return "Dokumente"
             
     return "Sonstiges"
