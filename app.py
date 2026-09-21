@@ -50,8 +50,7 @@ def automatische_kategorie_erkennung(image):
         results = classifier(image)
         top_label = results[0]['label'].lower()
         
-        # 1. Taschen, Rucksäcke & Federtaschen / Etuis
-        if any(word in top_label for word in ['backpack', 'bag', 'purse', 'wallet', 'suitcase', 'pouch', 'case', 'pencil']):
+        elif any(word in top_label for word in ['backpack', 'bag', 'purse', 'wallet', 'suitcase', 'pencil', 'pouch', 'case', 'box', 'binder']):
             return "Taschen/Rucksäcke"
             
         # 2. Kleidung
