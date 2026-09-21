@@ -47,23 +47,31 @@ except Exception as e:
 
 def automatische_kategorie_erkennung(image):
     if image is not None and classifier is not None:
-        # KI-Vorhersage für das hochgeladene Bild
         results = classifier(image)
         top_label = results[0]['label'].lower()
         
-        # Übersetzung/Zuordnung der ImageNet-Klassen zu deinen Kategorien
-        if any(word in top_label for word in ['shoe', 'jacket', 'shirt', 'hat', 'glove', 'jersey', 'sock', 'coat', 'muffler', 'cardigan', 'cap', 'boot']):
+        # 1. Taschen, Rucksäcke & Federtaschen / Etuis
+        if any(word in top_label for word in ['backpack', 'bag', 'purse', 'wallet', 'suitcase', 'pouch', 'case', 'pencil']):
+            return "Taschen/Rucksäcke"
+            
+        # 2. Kleidung
+        elif any(word in top_label for word in ['shoe', 'jacket', 'shirt', 'hat', 'glove', 'jersey', 'sock', 'coat', 'muffler', 'cardigan', 'cap', 'boot']):
             return "Kleidung"
+            
+        # 3. Schlüssel
         elif any(word in top_label for word in ['key', 'padlock']):
             return "Schlüssel"
+            
+        # 4. Elektronik
         elif any(word in top_label for word in ['cellular', 'phone', 'laptop', 'ipod', 'mouse', 'keyboard', 'headphone', 'camera', 'screen', 'computer']):
             return "Elektronik"
-        elif any(word in top_label for word in ['backpack', 'bag', 'purse', 'wallet', 'suitcase', 'pouch']):
-            return "Taschen/Rucksäcke"
-        elif any(word in top_label for word in ['book', 'envelope', 'passport', 'notebook', 'binder', 'paper']):
+            
+        # 5. Dokumente & Schreibwaren
+        elif any(word in top_label for word in ['book', 'envelope', 'passport', 'notebook', 'binder', 'paper', 'ruler']):
             return "Dokumente"
             
     return "Sonstiges"
+
 
 # ---------------------------------------------------------
 # DATENBANK INITIALISIERUNG
