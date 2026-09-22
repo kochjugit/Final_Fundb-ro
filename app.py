@@ -14,19 +14,58 @@ st.set_page_config(
 # Custom CSS für Layout-Anpassung
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
     .main-header {
         text-align: center;
-        font-size: 2.8rem;
-        font-weight: bold;
-        color: #2C3E50;
-        margin-bottom: 2rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 2.3rem;
+        font-weight: 700;
+        color: #1A2B3C;
+        letter-spacing: -0.5px;
+        margin: 0.4rem 0 0.1rem 0;
     }
-    .stButton>button {
+    .sub-header {
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        color: #7A8B9A;
+        font-size: 0.95rem;
+        margin-bottom: 1.8rem;
+    }
+
+    /* Startseiten-Kacheln: symmetrisch, alle gleich groß */
+    div[data-testid="column"] .stButton>button {
         width: 100%;
-        height: 80px;
-        font-size: 1.4rem !important;
-        font-weight: bold !important;
-        border-radius: 12px !important;
+        height: 90px;
+        font-size: 1.05rem !important;
+        font-weight: 600 !important;
+        border-radius: 14px !important;
+        border: 1px solid #E5E9EC !important;
+        background-color: #F7F9FA !important;
+        color: #2C3E50 !important;
+        transition: 0.15s ease;
+        white-space: normal;
+        line-height: 1.3;
+    }
+    div[data-testid="column"] .stButton>button:hover {
+        background-color: #2C3E50 !important;
+        color: #FFFFFF !important;
+        border-color: #2C3E50 !important;
+    }
+
+    /* Sonstige Buttons (z.B. in Karten, Formularen) */
+    .stButton>button {
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Karten-Container für Fundstücke */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 14px !important;
         margin-bottom: 1rem;
     }
     </style>
@@ -116,42 +155,43 @@ def status_aendern(item_id, neuer_status):
             item["status"] = neuer_status
 
 def item_karte_anzeigen(item):
-    st.markdown(f"### {item['titel']}")
-    col_img, col1, col2 = st.columns([1, 2, 2])
-    
-    with col_img:
-        if item.get("bild") is not None:
-            st.image(item["bild"], use_container_width=True)
-        else:
-            st.info("Kein Bild vorhanden")
-            
-    with col1:
-        st.write(f"**Kategorie:** {item['kategorie']}")
-        st.write(f"**Ort:** {item['ort']}")
-        st.write(f"**Datum:** {item['datum'].strftime('%d.%m.%Y')}")
-        
-    with col2:
-        st.write(f"**Beschreibung:** {item['beschreibung']}")
-        st.write(f"**Kontakt:** {item['kontakt']}")
-        
-        if item["status"] == "Aktiv":
-            st.warning("Status: Noch nicht abgeholt")
-            if st.button("✅ Als abgeholt kennzeichnen", key=f"btn_abgeholt_{item['id']}"):
-                status_aendern(item['id'], "Abgeholt")
-                st.success("Status aktualisiert!")
-                st.rerun()
-        else:
-            st.success("Status: Bereits abgeholt")
-            if st.button("🔄 Zurück auf 'Aktiv' setzen", key=f"btn_aktiv_{item['id']}"):
-                status_aendern(item['id'], "Aktiv")
-                st.success("Status aktualisiert!")
-                st.rerun()
-    st.divider()
+    with st.container(border=True):
+        st.markdown(f"### {item['titel']}")
+        col_img, col1, col2 = st.columns([1, 2, 2])
+
+        with col_img:
+            if item.get("bild") is not None:
+                st.image(item["bild"], use_container_width=True)
+            else:
+                st.info("Kein Bild vorhanden")
+
+        with col1:
+            st.write(f"**Kategorie:** {item['kategorie']}")
+            st.write(f"**Ort:** {item['ort']}")
+            st.write(f"**Datum:** {item['datum'].strftime('%d.%m.%Y')}")
+
+        with col2:
+            st.write(f"**Beschreibung:** {item['beschreibung']}")
+            st.write(f"**Kontakt:** {item['kontakt']}")
+
+            if item["status"] == "Aktiv":
+                st.warning("Status: Noch nicht abgeholt")
+                if st.button("✅ Als abgeholt kennzeichnen", key=f"btn_abgeholt_{item['id']}"):
+                    status_aendern(item['id'], "Abgeholt")
+                    st.success("Status aktualisiert!")
+                    st.rerun()
+            else:
+                st.success("Status: Bereits abgeholt")
+                if st.button("🔄 Zurück auf 'Aktiv' setzen", key=f"btn_aktiv_{item['id']}"):
+                    status_aendern(item['id'], "Aktiv")
+                    st.success("Status aktualisiert!")
+                    st.rerun()
 
 # ---------------------------------------------------------
 # HAUPTSEITE & NAVIGATION
 # ---------------------------------------------------------
-st.markdown("<div class='main-header'>Digitales Fundbüro</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-header'>🔍 Digitales Fundbüro</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub-header'>Verlorene Gegenstände melden, suchen und abholen</div>", unsafe_allow_html=True)
 
 if st.session_state.ansicht != "home":
     if st.button("⬅️ Zurück zur Hauptübersicht", key="back_btn"):
@@ -160,30 +200,25 @@ if st.session_state.ansicht != "home":
 
 # 1. HAUPTÜBERSICHT
 if st.session_state.ansicht == "home":
-    st.write("---")
-    col_a, col_b = st.columns([3, 1])
-    with col_a:
-        if st.button("🔍  Schnellsuche"):
-            st.session_state.ansicht = "schnellsuche"
-            st.rerun()
+    st.write("")
 
-        if st.button("📅  Diese Woche gefunden"):
-            st.session_state.ansicht = "diese_woche"
-            st.rerun()
+    kacheln = [
+        ("🔍", "Schnellsuche", "schnellsuche"),
+        ("📅", "Diese Woche gefunden", "diese_woche"),
+        ("📦", "Alle Stücke", "alle_stuecke"),
+        ("✅", "Abholen", "abholen"),
+        ("➕", "Gegenstand melden", "neu_melden"),
+    ]
 
-        if st.button("📦  Alle Stücke"):
-            st.session_state.ansicht = "alle_stuecke"
-            st.rerun()
-
-        if st.button("✅  Abholen"):
-            st.session_state.ansicht = "abholen"
-            st.rerun()
-            
-    with col_b:
-        st.info("➕ **Neuer Fund?**")
-        if st.button("Gegenstand melden"):
-            st.session_state.ansicht = "neu_melden"
-            st.rerun()
+    # Symmetrisches 2-Spalten-Raster, alle Kacheln gleich groß
+    for i in range(0, len(kacheln), 2):
+        reihe = kacheln[i:i + 2]
+        cols = st.columns(2)
+        for col, (icon, label, ziel) in zip(cols, reihe):
+            with col:
+                if st.button(f"{icon}  {label}", key=f"home_{ziel}", use_container_width=True):
+                    st.session_state.ansicht = ziel
+                    st.rerun()
 
 # 2. ANSICHT: SCHNELLSUCHE
 elif st.session_state.ansicht == "schnellsuche":
