@@ -174,6 +174,10 @@ if st.session_state.ansicht == "home":
         if st.button("📦  Alle Stücke"):
             st.session_state.ansicht = "alle_stuecke"
             st.rerun()
+
+        if st.button("✅  Abholen"):
+            st.session_state.ansicht = "abholen"
+            st.rerun()
             
     with col_b:
         st.info("➕ **Neuer Fund?**")
@@ -248,7 +252,20 @@ elif st.session_state.ansicht == "alle_stuecke":
         for item in items:
             item_karte_anzeigen(item)
 
-# 5. ANSICHT: NEUEN GEGENSTAND MELDEN (mit Bild-Upload & Google KI-Erkennung)
+# 5. ANSICHT: ABHOLEN (nur aktive Fundstücke, zum Abhaken)
+elif st.session_state.ansicht == "abholen":
+    st.subheader("✅ Gegenstand abholen")
+
+    aktive_items = [item for item in st.session_state.fundstuecke if item["status"] == "Aktiv"]
+
+    if not aktive_items:
+        st.info("Aktuell gibt es keine offenen Fundstücke zum Abholen.")
+    else:
+        st.write(f"**Offene Fundstücke:** {len(aktive_items)}")
+        for item in aktive_items:
+            item_karte_anzeigen(item)
+
+# 6. ANSICHT: NEUEN GEGENSTAND MELDEN (mit Bild-Upload & Google KI-Erkennung)
 elif st.session_state.ansicht == "neu_melden":
     st.subheader("➕ Neuen Fund melden")
     
