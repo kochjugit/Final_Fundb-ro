@@ -190,7 +190,31 @@ def item_karte_anzeigen(item):
 # ---------------------------------------------------------
 # HAUPTSEITE & NAVIGATION
 # ---------------------------------------------------------
-st.markdown("<div class='main-header'>🔍 Digitales Fundbüro</div>", unsafe_allow_html=True)
+st.markdown("""
+    <div style="position: relative; width: 100%;">
+        <div class="main-header">Fundbüro Katharineum zu Lübeck</div>
+        <div style="position: absolute; top: -4px; right: 6px; width: 52px; height: 52px;">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#1A2B3C" stroke-width="4"/>
+                <circle cx="50" cy="50" r="5" fill="#1A2B3C"/>
+                <line x1="50" y1="12" x2="50" y2="88" stroke="#1A2B3C" stroke-width="3"/>
+                <line x1="12" y1="50" x2="88" y2="50" stroke="#1A2B3C" stroke-width="3"/>
+                <line x1="23" y1="23" x2="77" y2="77" stroke="#1A2B3C" stroke-width="3"/>
+                <line x1="77" y1="23" x2="23" y2="77" stroke="#1A2B3C" stroke-width="3"/>
+                <g fill="#1A2B3C">
+                    <path d="M50 6 L45 14 L55 14 Z"/>
+                    <path d="M50 94 L45 86 L55 86 Z"/>
+                    <path d="M6 50 L14 45 L14 55 Z"/>
+                    <path d="M94 50 L86 45 L86 55 Z"/>
+                    <path d="M19 19 L26 22 L22 26 Z"/>
+                    <path d="M81 19 L74 22 L78 26 Z"/>
+                    <path d="M19 81 L26 78 L22 74 Z"/>
+                    <path d="M81 81 L74 78 L78 74 Z"/>
+                </g>
+            </svg>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 st.markdown("<div class='sub-header'>Verlorene Gegenstände melden, suchen und abholen</div>", unsafe_allow_html=True)
 
 if st.session_state.ansicht != "home":
